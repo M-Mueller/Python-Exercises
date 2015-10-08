@@ -1,51 +1,46 @@
-numbers = '''
+import functools
+
+def splitDigits(code):
+    lines = [l for l in code.split('\n')]
+    # assure that all lines have the same amount of characters
+    numChars = max([len(l) for l in lines])
+    def adjustLine(l):
+        return l + ' ' * max(numChars-len(l), 0);
+    lines = [adjustLine(l) for l in lines]
+    numDigits = numChars//3
+    digits = ['']*numDigits
+    for i in range(numDigits):
+        digits[i] += lines[0][i*3:i*3+3] + '\n'
+        digits[i] += lines[1][i*3:i*3+3] + '\n'
+        digits[i] += lines[2][i*3:i*3+3]
+    return digits
+
+__numbers = '''
  _     _  _     _  _  _  _  _
 | |  | _| _||_||_ |_   ||_||_|
 |_|  ||_  _|  | _||_|  ||_| _|
-'''
+'''[1:]#remove first newline
+#create a dict that maps each digit in string representation to its number (also str to keep leading 0)
+__digitMap = dict([(d,str(i)) for i,d in enumerate(splitDigits(__numbers))])
+def convertDigit(digit):
+    return __digitMap[digit]
 
-class Converter:
-    def __init__(self):
-        digits = self.splitDigits(numbers)
-        self.digitLineDicts = [{} for i in range(3)]
-        self.digitIdDict = {}
-        digitIndices = [0]*3
-        for d in digits:
-            for (lineIdx, line) in enumerate(d.split('\n')):
-                lDict = self.digitLineDicts[lineIdx]
-                if not line in lDict:
-                    lDict[line] = digitIndices[lineIdx]
-                    digitIndices[lineIdx] += 1
-        for i,d in enumerate(digits):
-            self.digitIdDict[self.generateID(d)] = i
+def convertDigits(digits):
+    for d in splitDigits(digits):
+        yield convertDigit(d)
 
-    def generateID(self, digit):
-        id = 0
-        for (lineIdx, line) in enumerate(digit.split('\n')):
-            id *= 10
-            id += self.digitLineDicts[lineIdx][line]
-        return id
+def test(input, expected):
+    actual = ''.join(convertDigits(input))
+    if (actual != expected):
+        print(input)
+    print("{0} ({1})".format(actual, expected))
 
-    def convertDigit(self, digit):
-        return self.digitIdDict[self.generateID(digit)]
+# for k,v in __digitMap.items():
+#     print(k)
+#     print(v)
 
-    def splitDigits(self, code):
-        lines = [l for l in code.split('\n') if l]
-        numChars = max([len(l) for l in lines])
-        def adjustLine(l):
-            return l + ' ' * max(numChars-len(l), 0);
-        lines = [adjustLine(l) for l in lines]
-        numDigits = numChars//3
-        digits = ['']*numDigits
-        for i in range(numDigits):
-            digits[i] += lines[0][i*3:i*3+3] + '\n'
-            digits[i] += lines[1][i*3:i*3+3] + '\n'
-            digits[i] += lines[2][i*3:i*3+3]
-        return digits
-
-    def convert(self, digits):
-        for d in self.splitDigits(digits):
-            yield self.convertDigit(d)
-
-c = Converter()
-print(list(c.convert(numbers)))
+with open('BankOCR_Test.txt', 'r') as f:
+    codes = [c for c in f.read().split(';\n') if c]
+    for code in codes:
+        lines = code.split('\n')
+        test('\n'.join(lines[0:3]), lines[3])
