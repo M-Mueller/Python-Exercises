@@ -2,18 +2,28 @@ import random
 from itertools import product
 
 class Grid:
+	'''2D grid of values
+	'''
 	def __init__(self, m, n, initial=0):
 		self.grid = [[initial for r in range(n)] for c in range(m)]
 		self.num_columns = m
 		self.num_rows = n
 
 	def __call__(self, x, y):
+		'''Returns value at grid point (x, y)
+		'''
 		return self.grid[x][y]
 
 	def set(self, x, y, value):
+		'''Overrides the value at grid point (x, y)
+		'''
 		self.grid[x][y] = value
 
 	def neighbors(self, x, y):
+		'''Returns a generator for all neighbors of a grid point (x,y)
+		Does not return the central grid point, i.e. (x,y).
+		Does not generate points outside the grid for grid points at the border.
+		'''
 		for a in range(max(x-1, 0), min(x+2, self.num_columns)):
 			for b in range(max(y-1, 0), min(y+2, self.num_rows)):
 				if a != x or b != y:
@@ -28,6 +38,11 @@ class Grid:
 		return s
 
 def generate_minefield(m, n, numMines):
+	'''Generates a Grid of variable size and a specific number of mines.
+	Mines are assigned a value of -1. 
+	All other fields are assigned the number of mines in directly neighboring fields.
+	For example if a field is surrounded by mines it has a value of 8.
+	'''
 	grid = Grid(m, n)
 	# indices of all fields
 	fields = [(c,r) for r in range(grid.num_columns) for c in range(grid.num_rows)]
@@ -37,12 +52,13 @@ def generate_minefield(m, n, numMines):
 
 	# fill remaining fields with hints about their neighboring fields
 	for x,y in fields:
-		if grid(x, y) != -1:
-			grid.set(x, y, hint(grid, x, y))
+		grid.set(x, y, hint(grid, x, y))
 
 	return grid
 
 def hint(mines, x, y):
+	'''Returns the number of mines in the neighboring fields or -1 if the field itself is a mine.
+	'''
 	if mines(x, y) == -1:
 		return -1
 	else:
@@ -53,6 +69,8 @@ def hint(mines, x, y):
 		return h
 
 def is_solved(mines, flags):
+	'''Returns true if all mines are flagged
+	'''
 	for y in range(mines.num_rows):
 		for x in range(flags.num_columns):
 			f, m = flags(x, y), mines(x, y)
@@ -62,6 +80,8 @@ def is_solved(mines, flags):
 	return True
 
 def auto_mark(mines, flags):
+	'''Marks all mines as flagged and reveals all fields but only if all non-mine fields are already revealed
+	'''
 	for y in range(mines.num_rows):
 		for x in range(mines.num_columns):
 			f, m = flags(x, y), mines(x, y)
@@ -78,11 +98,14 @@ def auto_mark(mines, flags):
 				flags.set(x, y, 2)
 
 def reveal(mines, flags, x, y):
+	'''Reveals a fields.
+	Returns False if the revealed field was a mine field or True otherwise.
+	If the revealed field has no neighboring mines all neighboring fields are revealed recursively.
+	'''
+	flags.set(x, y, 2)
 	if mines(x, y) == -1:
-		flags.set(x, y, 2)
 		return False
 	else:
-		flags.set(x, y, 2)
 		if mines(x, y) == 0:
 			for nx, ny in mines.neighbors(x, y):
 				if flags(nx,ny) == 0:
