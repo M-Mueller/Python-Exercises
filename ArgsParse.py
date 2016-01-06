@@ -1,3 +1,5 @@
+import re
+
 """
 >>> p = ArgParse()
 >>> p.addOption('-p')
@@ -37,15 +39,19 @@ class ArgParse:
 		self.options[name] = parseValue
 
 	def parse(self, args):
-		# split at space and remove empty elements
-		args = [s for s in args.split(' ') if s]
+		# a flag is a - together with a letter
+		# flags must be either proceeded or succeeded by a space (except start/end of string)
+		tokens = re.split('((?:^| )-[a-zA-Z](?= |$))', args)
+		# remove all empty tokens and strip leading/trailing whitespace
+		tokens = [t.strip() for t in tokens if t]
+
 		result = {}
-		while len(args) > 0:
-			flag = args.pop(0)
+		while len(tokens) > 0:
+			flag = tokens.pop(0)
 			if not flag.startswith('-'):
 				raise ValueError('Unexpected Value: ' + flag)
 			if flag in self.options:
-				result[flag] = self.options[flag](args)
+				result[flag] = self.options[flag](tokens)
 			else:
 				raise ValueError('Unkown Parameter: ' + flag)
 		return result
@@ -58,4 +64,4 @@ if __name__ == '__main__':
 	p.addOption('-l')
 	p.addInteger('-p')
 	p.addString('-d')
-	print(p.parse('-l -p 8080 -d /usr/logs '))
+	print(p.parse('-l -p 8080 -d /usr-foo/logs'))
