@@ -37,6 +37,11 @@ class Grid:
 			s += '\n'
 		return s
 
+class Flags:
+	Unknown = 0
+	Marked = 1
+	Revealed = 2
+
 def generate_minefield(m, n, numMines):
 	'''Generates a Grid of variable size and a specific number of mines.
 	Mines are assigned a value of -1. 
@@ -56,11 +61,16 @@ def generate_minefield(m, n, numMines):
 
 	return grid
 
-def hint(mines, x, y):
-	'''Returns the number of mines in the neighboring fields or -1 if the field itself is a mine.
+def is_mine(mine):
+	'''Returns True if the value is a mine.
 	'''
-	if mines(x, y) == -1:
-		return -1
+	return mine == -1
+
+def hint(mines, x, y):
+	'''Returns the number of mines in the neighboring fields or the mine value if the field itself is a mine.
+	'''
+	if is_mine(mines(x, y)):
+		return mines(x, y)
 	else:
 		h = 0
 		for a, b in mines.neighbors(x, y):
@@ -75,24 +85,24 @@ def is_solved(mines, flags):
 		for x in range(flags.num_columns):
 			f, m = flags(x, y), mines(x, y)
 			# if any mine is not marked, the game is not solved
-			if m == -1 and f != 1:
+			if is_mine(m) and f != Flags.Marked:
 				return False
 	return True
 
 def auto_mark(mines, flags):
-	'''Marks all mines as flagged and reveals all fields but only if all non-mine fields are already revealed
+	'''Marks all mines and reveals all fields but only if all non-mine fields are already revealed
 	'''
 	for y in range(mines.num_rows):
 		for x in range(mines.num_columns):
 			f, m = flags(x, y), mines(x, y)
-			# check if all non mine fields are revealed
-			if m != -1 and f == 0:
+			# check if all non-mine fields are revealed
+			if not is_mine(m) and f == Flags.Unknown:
 				return False
 
 	# mark all mines and reveal remaining flields
 	for y in range(mines.num_rows):
 		for x in range(mines.num_columns):
-			if mines(x, y) == -1:
+			if is_mine(mines(x, y)):
 				flags.set(x, y, 1)
 			else:
 				flags.set(x, y, 2)
@@ -102,13 +112,13 @@ def reveal(mines, flags, x, y):
 	Returns False if the revealed field was a mine field or True otherwise.
 	If the revealed field has no neighboring mines all neighboring fields are revealed recursively.
 	'''
-	flags.set(x, y, 2)
-	if mines(x, y) == -1:
+	flags.set(x, y, Flags.Revealed)
+	if is_mine(mines(x, y)):
 		return False
 	else:
 		if mines(x, y) == 0:
 			for nx, ny in mines.neighbors(x, y):
-				if flags(nx,ny) == 0:
+				if flags(nx,ny) == Flags.Unknown:
 					ok = reveal(mines, flags, nx, ny)
 					assert(ok) # must not be surrounded by any mines
 		auto_mark(mines, flags)
@@ -119,12 +129,12 @@ def print_field(mines, flags):
 	for y in range(mines.num_rows):
 		for x in range(mines.num_columns):
 			f, m = flags(x, y), mines(x, y)
-			if f == 0:
+			if f == Flags.Unknown:
 				s += '?'
-			elif f == 1:
+			elif f == Flags.Marked:
 				s += '!'
-			elif f == 2:
-				if m == -1:
+			elif f == Flags.Revealed:
+				if is_mine(m):
 					s += '*'
 				else:
 					s += str(m)
@@ -134,7 +144,7 @@ def print_field(mines, flags):
 if __name__ == '__main__':
 	m,n = 5,5
 	mines = generate_minefield(m, n, 2)
-	flags = Grid(m, n)
+	flags = Grid(m, n, Flags.Unknown)
 
 	#print(str(mines).replace('-1', '*'))
 
