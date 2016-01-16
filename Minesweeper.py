@@ -2,20 +2,81 @@ import random
 from itertools import product
 
 class Grid:
-	'''2D grid of values
+	'''2D grid of values with m columns and n rows.
+	>>> Grid(2, 2)
+	0 0
+	0 0
+	>>> Grid(2, 2, 1)
+	1 1
+	1 1
+	>>> Grid(3, 2)
+	0 0 0
+	0 0 0
+	>>> Grid(2, 3)
+	0 0
+	0 0
+	0 0
+	>>> Grid(2,0)
+	Traceback (most recent call last):
+	...
+	ValueError: Grid size cannot be smaller than 1
+	>>> Grid(1,-1)
+	Traceback (most recent call last):
+	...
+	ValueError: Grid size cannot be smaller than 1
+	>>> g = Grid(3, 4)
+	>>> g.num_rows
+	4
+	>>> g.num_columns
+	3
 	'''
 	def __init__(self, m, n, initial=0):
+		if m <= 0 or n <=0:
+			raise ValueError('Grid size cannot be smaller than 1')
 		self.grid = [[initial for r in range(n)] for c in range(m)]
 		self.num_columns = m
 		self.num_rows = n
 
 	def __call__(self, x, y):
-		'''Returns value at grid point (x, y)
+		'''Returns value at grid point (x, y).
+		>>> g = Grid(4, 2)
+		>>> g(0, 0)
+		0
+		>>> g.set(1,1,1)
+		>>> g.set(3,0,2)
+		>>> g.set(0,1,3)
+		>>> g(1,1)
+		1
+		>>> g(3,0)
+		2
+		>>> g(0,1)
+		3
+		>>> g(0,0)
+		0
+		>>> g(4,0)
+		Traceback (most recent call last):
+		...
+		IndexError: list index out of range
+		>>> g(0,4)
+		Traceback (most recent call last):
+		...
+		IndexError: list index out of range
+		>>> g(0,-1)
+		3
 		'''
 		return self.grid[x][y]
 
 	def set(self, x, y, value):
 		'''Overrides the value at grid point (x, y)
+		>>> g = Grid(3, 2)
+		>>> g(0,0)
+		0
+		>>> g.set(0, 0, 4)
+		>>> g.set(1, 0, 5)
+		>>> g.set(0, 1, 6)
+		>>> g
+		4 5 0
+		6 0 0
 		'''
 		self.grid[x][y] = value
 
@@ -33,9 +94,25 @@ class Grid:
 		s = ''
 		for y in range(self.num_rows):
 			for x in range(self.num_columns):
-				s += str(self(x,y))
-			s += '\n'
-		return s
+				s += str(self(x,y)) + ' '
+			s = s[:-1] + '\n' #remove last space and add newline
+		return s[:-1] #remove last newline
+
+	def __repr__(self):
+		return str(self)
+
+	@classmethod
+	def _test_grid(cls):
+		'''
+		>>> Grid._test_grid()
+		0 3 6 9
+		1 4 7 10
+		2 5 8 11
+		'''
+		g = Grid(4,3)
+		for i, (x, y) in enumerate(product(range(4), range(3))):
+			g.set(x,y,i)
+		return g
 
 class Flags:
 	Unknown = 0
@@ -142,11 +219,11 @@ def print_field(mines, flags):
 	print s
 
 if __name__ == '__main__':
+	import doctest
+	doctest.testmod()
 	m,n = 5,5
 	mines = generate_minefield(m, n, 2)
 	flags = Grid(m, n, Flags.Unknown)
-
-	#print(str(mines).replace('-1', '*'))
 
 	while(True):
 		print_field(mines, flags)
